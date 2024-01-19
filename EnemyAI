@@ -1,0 +1,113 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.Threading;
+using Unity.AI.Navigation;
+using UnityEngine;
+using UnityEngine.AI;
+
+public class EnemyMovement : MonoBehaviour
+{
+    [Header("Random Movement")]
+    [HideInInspector] public NavMeshAgent agent;
+    [HideInInspector] public Vector3 HitPoint;
+    [SerializeField] private float MovementRange;
+    Vector3 Centre;
+    public GameObject Upstairs;
+
+    [Header("Following Player")]
+    private GameObject Player;
+    public GameObject GoTo;
+    [HideInInspector] public bool FollowingPlayer;
+    private float Distance;
+
+    [Header("Hunting")]
+    float HuntTimer, HuntInterval;
+    public static bool Hunting;
+    int HuntCheck;
+
+    void Start()
+    {
+        agent = GetComponent<NavMeshAgent>();
+        Player = GameObject.Find("Player").gameObject;
+        HuntCheck = 0;
+        Hunting = false;
+    }
+    private void Update()
+    {   
+        InbetweenHunting();
+        WhenHunting();
+    }
+    private void LateUpdate()
+    {
+        HuntingMesh();
+        StoppingDistance();
+        AiDestination(Centre, MovementRange);
+    }
+    bool AiDestination(Vector3 Centre, float MovementRange)
+    {
+        if (agent.remainingDistance <= agent.stoppingDistance && !FollowingPlayer && !HidingFromGhost.PlayerHiding)
+        {
+            HitPoint = Random.insideUnitSphere * MovementRange;
+            agent.SetDestination(HitPoint);
+            return true;
+        }
+        return false;
+    }
+    void StoppingDistance()
+    {
+        Distance = Vector3.Distance(transform.position, Player.transform.position);
+        if (Distance < 2.1f)
+        {
+            Upstairs.gameObject.SetActive(false);
+        }else Upstairs.gameObject.SetActive(true);
+        if (Distance < 1.3f && Hunting)
+        {
+            agent.isStopped = true;
+        }
+        else if (Distance > 1.3f) agent.isStopped = false;
+        
+    }
+    void InbetweenHunting()
+    {
+        if(HuntCheck == 0)
+        {
+            HuntInterval = Random.Range(20, 36);
+            HuntTimer = Random.Range(30, 46);
+            HuntCheck = 1;
+        }
+        else if(HuntInterval > 0)
+        {
+            HuntInterval -= 1 * Time.deltaTime;
+            agent.SetDestination(HitPoint);
+        }
+        if (HuntInterval <= 0)
+        {
+            Hunting = true;
+        }
+    }
+    void WhenHunting()
+    {
+        if (Hunting)
+        {
+            HuntTimer -= 1 * Time.deltaTime;
+            if (!HidingFromGhost.PlayerHiding)
+            {
+                agent.SetDestination(Player.transform.position);
+            }
+            else agent.SetDestination(HitPoint);
+        }
+        if(HuntTimer <= 0)
+        {
+            HuntCheck--;
+            Hunting = false;
+        }
+    }
+    void HuntingMesh()
+    {
+        if(Hunting)
+        {
+            gameObject.GetComponent<MeshRenderer>().enabled = true;
+        }
+        else gameObject.GetComponent<MeshRenderer>().enabled = false;
+    }
+}
