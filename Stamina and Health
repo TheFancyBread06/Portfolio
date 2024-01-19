@@ -1,0 +1,133 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+public class MainHotbarUI : MonoBehaviour
+{
+    private PlayerMovement _playerMovement;
+    public GameObject Player;
+    public GameObject Enemy;
+
+    [Header("Health")]
+    float HealthX = 1, RegenCooldown = 0, deadtimer = 0;
+    [SerializeField] Vector3 HealthMax;
+    [SerializeField] RawImage HealthBar;
+    [SerializeField] RawImage PillBottle;
+    [SerializeField] RawImage DeadImage;
+
+    [Header("Stamina")]
+    [SerializeField] float Timer = 5;
+    [SerializeField] RawImage StaminaEndPiece;
+    [SerializeField] RawImage StaminaSecondToLast;
+    [SerializeField] RawImage StaminaMiddlePiece;
+    [SerializeField] RawImage StaminaSecondToFirst;
+    [SerializeField] RawImage StaminaFirst;
+
+    private void Start()
+    {
+        _playerMovement = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerMovement>();
+    }
+    void Update()
+    {
+        Stamina();
+        Health();
+        TakingDamage();
+        RegenHealth();
+    }
+    void RegenHealth()
+    {
+        if(HealthX > 1) HealthX = 1;
+        if(Input.GetKeyDown(KeyCode.E) && HealthX < 1 && PillBottle.gameObject.activeInHierarchy)
+        {
+            PillBottle.gameObject.SetActive(false);
+            HealthX += 0.50f;
+        }
+        if(!PillBottle.gameObject.activeInHierarchy)
+        {
+            RegenCooldown += 1 * Time.deltaTime;
+            if (RegenCooldown > 60)
+            {
+                PillBottle.gameObject.SetActive(true);
+                RegenCooldown = 0;
+            }
+        }
+    }
+    void TakingDamage()
+    {
+        float Distance;
+        Distance = Vector3.Distance(Player.transform.position, Enemy.transform.position);
+        if(EnemyMovement.Hunting && Distance < 2.1f)
+        {
+            HealthX -= 0.5f * Time.deltaTime;
+        }
+    }
+    void Health()
+    {
+        HealthMax = new Vector3 (HealthX, 1, 1);
+        HealthBar.transform.localScale = HealthMax;
+        if (HealthX <= 0)
+        {
+            Destroy(Player);
+            DeadImage.gameObject.SetActive(true);
+            Cursor.lockState = CursorLockMode.None;
+            deadtimer += 1 * Time.deltaTime;
+            if(deadtimer > 3)
+            {
+                SceneManager.LoadScene(0, LoadSceneMode.Single);
+            }
+        }
+    }
+    void Stamina()
+    {
+        if (_playerMovement.SprintTimer >= 5)
+        {
+            StaminaEndPiece.enabled = false;
+            StaminaSecondToLast.enabled = false;
+            StaminaMiddlePiece.enabled = false;
+            StaminaSecondToFirst.enabled = false;
+            StaminaFirst.enabled = false;
+        }
+        else if (_playerMovement.SprintTimer >= 4)
+        {
+            StaminaEndPiece.enabled = false;
+            StaminaSecondToLast.enabled = false;
+            StaminaMiddlePiece.enabled = false;
+            StaminaSecondToFirst.enabled = false;
+            StaminaFirst.enabled = true;
+        }
+        else if (_playerMovement.SprintTimer >= 3)
+        {
+            StaminaEndPiece.enabled = false;
+            StaminaSecondToLast.enabled = false;
+            StaminaMiddlePiece.enabled = false;
+            StaminaSecondToFirst.enabled = true;
+            StaminaFirst.enabled = true;
+        }
+        else if (_playerMovement.SprintTimer >= 2)
+        {
+            StaminaEndPiece.enabled = false;
+            StaminaSecondToLast.enabled = false;
+            StaminaMiddlePiece.enabled = true;
+            StaminaSecondToFirst.enabled = true;
+            StaminaFirst.enabled = true;
+        }
+        else if (_playerMovement.SprintTimer >= 1)
+        {
+            StaminaEndPiece.enabled = false;
+            StaminaSecondToLast.enabled = true;
+            StaminaMiddlePiece.enabled = true;
+            StaminaSecondToFirst.enabled = true;
+            StaminaFirst.enabled = true;
+        }
+        else
+        {
+            StaminaEndPiece.enabled = true;
+            StaminaSecondToLast.enabled = true;
+            StaminaMiddlePiece.enabled = true;
+            StaminaSecondToFirst.enabled = true;
+            StaminaFirst.enabled = true;
+        }
+    }
+}
