@@ -1,1 +1,106 @@
-I
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+[RequireComponent(typeof(CharacterController))]
+public class PlayerMovement : MonoBehaviour
+{
+    CharacterController Controller;
+    Animator animator;
+
+    [Header("-----Movement-----")]
+    Vector3 Direction;
+    Vector3 DirectionLocal;
+    [SerializeField] private float _MovementSpeed;
+    [SerializeField] private float GravityForce;
+    float _xInput, _zInput;
+
+    [Header("-----Sprinting-----")]
+    [HideInInspector] public int SprintInt;
+    [HideInInspector] public float SprintTimer;
+
+    [Header("-----CursorLockState-----")]
+    [SerializeField] RawImage WindowsXp;
+    [SerializeField] RawImage TvRemote;
+    [SerializeField] RawImage CursorCircle;
+    [SerializeField] RawImage CarLockPick;
+
+    void Start()
+    {
+        Controller = GetComponent<CharacterController>();
+        animator = GetComponent<Animator>();
+        Cursor.lockState = CursorLockMode.Locked;
+    }
+    void Update()
+    {
+        CameraBob();
+        SprintingPlayer();
+        CursorCheck();
+    }
+    private void FixedUpdate()
+    {
+        StopPlayerMovement();
+    }
+    void CursorCheck()
+    {
+        CursorCircle.gameObject.transform.position = Input.mousePosition;
+        if (WindowsXp.gameObject.activeInHierarchy || TvRemote.gameObject.activeInHierarchy)
+        {
+            Cursor.lockState = CursorLockMode.None;
+        }
+        else Cursor.lockState = CursorLockMode.Locked;
+    }
+    void MovementInput()
+    {
+        _xInput = Input.GetAxis("Horizontal");
+        _zInput = Input.GetAxis("Vertical");
+        Direction = new Vector3(_xInput, -1 * GravityForce, _zInput);
+        DirectionLocal = transform.TransformDirection(Direction).normalized;
+        Controller.Move(DirectionLocal * Time.deltaTime * _MovementSpeed);
+    }
+    void StopPlayerMovement()
+    {
+        if (WindowsXp.gameObject.activeInHierarchy || CarLockPick.gameObject.activeInHierarchy)
+        {
+            return;
+        }
+        else MovementInput();
+    }
+    void CameraBob()
+    {
+        if(Controller.velocity.x > 0)
+        {
+            animator.SetFloat("X", 1);
+        }
+        else if (Controller.velocity.x < 0)
+        {
+            animator.SetFloat("X", -1);
+        }
+        animator.SetFloat("Y", 0);
+    }
+    void SprintingPlayer()
+    {
+        if(Input.GetKeyDown(KeyCode.LeftShift) && SprintInt == 0)
+        {
+            SprintInt++;
+        }
+        if (SprintInt == 1 && SprintTimer < 5) //change this number to increase duration of sprint
+        {
+            _MovementSpeed = 8;
+        }
+        else if (SprintTimer > 5) // make sure this is equal to the other sprint timer above it
+        {
+            _MovementSpeed = 5;
+            if (SprintTimer > 15)//change the number to increase cooldown
+            {
+                SprintInt--;
+                SprintTimer = 0;
+            }
+        }
+        if (SprintInt == 1)
+        {
+            SprintTimer += 1 * Time.deltaTime;
+        }
+    }
+}
