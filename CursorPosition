@@ -1,0 +1,116 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class CursorPosition : MonoBehaviour
+{
+    Inventory inventory;
+    TvRemoteUi TvRem;
+
+    [Header("-----CursorPosition-----")]
+    [SerializeField] Camera cam;
+    [SerializeField] LayerMask Object;
+    RaycastHit hit;
+    bool Holding;
+
+    [Header("-----ObjectsThatCanBeHit-----")]
+    float AnimationTimer = 0;
+    [SerializeField] GameObject Remote;
+    [SerializeField] Canvas SafeCanvas;
+    [SerializeField] RawImage RemoteUI;
+
+    private void Start()
+    {
+        inventory = GameObject.FindGameObjectWithTag("Interactable").GetComponent<Inventory>();
+        TvRem = GameObject.FindGameObjectWithTag("TvRemote").GetComponent<TvRemoteUi>();
+    }
+    void Update()
+    {
+        MousePosition();
+        HoldingSomething(Holding);
+        ClickedOnRemote();
+        ClickedOnSafe();
+        ClickedOnLocker();
+    }
+    private void MousePosition()
+    {
+        if (Input.GetKey(KeyCode.F))
+        {
+            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out hit, 3f, Object))
+            {
+                Holding = true;
+            }
+        }
+        else if (Input.GetKeyUp(KeyCode.F))
+        {
+            Holding = false;
+        }
+    }
+    void ClickedOnLocker()
+    {
+        if (hit.collider == null) { return; }
+        AnimationTimer += Time.deltaTime;
+        if (hit.collider.gameObject.name == "Locker" && Input.GetKeyDown(KeyCode.F))
+        {
+            hit.collider.GetComponent<Animator>().Play("LockerDoorAnimationOpen");
+            hit.collider.gameObject.GetComponent<Collider>().isTrigger = true;
+            AnimationTimer = 0;
+        }
+        else if (AnimationTimer >= 1.5f)
+        {
+            hit.collider.GetComponent<Animator>().Play("LockerDoorAnimationClose");
+            hit.collider.gameObject.GetComponent<Collider>().isTrigger = false;
+        }
+    }
+    void ClickedOnSafe()
+    {
+        if (hit.collider == null) { return; }
+        float Dist;
+        Dist = Vector2.Distance(transform.position, hit.collider.transform.position);
+        if (hit.collider.name == "Safe" && Input.GetKeyDown(KeyCode.F))
+        {
+            Cursor.lockState = CursorLockMode.None;
+            SafeCanvas.gameObject.SetActive(true);
+        }
+        if (Input.GetKeyDown(KeyCode.Escape) || Dist > 3)
+        {
+            SafeCanvas.gameObject.SetActive(false);
+            Cursor.lockState = CursorLockMode.Locked;
+        }
+    }
+    void ClickedOnRemote()
+    {
+        if(hit.collider == null) { return; }
+        float Distance;
+        Distance = Vector3.Distance(transform.position, Remote.transform.position);
+        if (hit.collider.name == "Tv remote" && Input.GetKeyDown(KeyCode.F))
+        {
+            RemoteUI.gameObject.SetActive(true);
+            Cursor.lockState = CursorLockMode.None;
+        }
+        if (Input.GetKeyDown(KeyCode.Escape) || Distance > 2)
+        {
+            RemoteUI.gameObject.SetActive(false);
+            Cursor.lockState = CursorLockMode.Locked;
+        }
+    }
+    bool HoldingSomething(bool Holding)
+    {
+        if (hit.collider == null) { return false; }
+        if (Holding && (hit.collider.name == ("FuzeThatNeedsToBePickedUp") || hit.collider.name == ("FuzeThatNeedsToBePickedUp(Clone)")))
+        {
+            Destroy(hit.collider.gameObject);
+            inventory.FuzeAmount++;
+            return true;
+        }
+        if (Holding && (hit.collider.name == ("TvRemoteBattery")))
+        {
+            Destroy(hit.collider.gameObject);
+            TvRem.BatteryCount++;
+            return true;
+        }
+        else return false;
+    }
+}
