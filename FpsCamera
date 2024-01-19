@@ -1,0 +1,22 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class FirstPersonCamera : MonoBehaviour
+{
+    public Transform Player;
+    public Transform Follow;
+    public float XSensitivity;
+    public float YSensitivity;
+    private float Xrotation;
+    void FixedUpdate()
+    {
+        float XInput = (Input.GetAxisRaw("Mouse X") * XSensitivity) * Time.deltaTime;
+        float YInput = (Input.GetAxisRaw("Mouse Y") * YSensitivity) * Time.deltaTime;
+
+        Xrotation -= YInput;
+        Xrotation = Mathf.Clamp(Xrotation, -90, 90);
+        transform.localEulerAngles = Vector3.right * Xrotation;
+        Player.Rotate(Vector3.up, XInput);
+    }
+}
